@@ -87,3 +87,26 @@ Risk rules (hard limits, not suggestions):
 - Max loss per trade and per day — no revenge trading past the daily limit
 - Avoid trading the first 5 minutes after the open
 - Defined-risk structures over naked options given premium decay/volatility
+
+#### Multi-timeframe confirmation method (validated 2026-07-10)
+
+SPX itself has no historicals endpoint via the Robinhood trading API — use
+SPY as a 10x proxy and scale.
+
+Pull three timeframes before calling a directional bias:
+- **1-minute (today's session):** EMA9/21, VWAP, RSI14. Mark the opening
+  range from the first 30 minutes; a volume-spike break of that range is
+  the primary intraday signal.
+- **4-hour (~6 months back):** EMA20/50, RSI14 — swing structure.
+- **Daily (~9-12 months back):** SMA50/200, RSI14 — primary trend.
+
+Cross-reference the 1-min target zone against live 0DTE option open
+interest by strike — a heavy call (or put) OI strike above/below spot acts
+as a magnet/target, sharper than eyeballing chart resistance alone.
+
+Treat alignment across all three timeframes (price above both short and
+long moving averages on every timeframe, RSI neutral-to-bullish/bearish on
+each, none overbought/oversold) as higher-confidence than any single
+timeframe in isolation. This read correctly called the 2026-07-10 session:
+a flash break of the opening range on a volume spike, a V-shaped reclaim,
+and continuation toward the 7600-strike call OI wall.
