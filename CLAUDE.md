@@ -16,6 +16,25 @@ For every trade idea: present the ticker, direction, thesis, and size
 rationale, and wait for explicit user confirmation before calling any
 order-placement tool.
 
+## Standing rule: market-hours gating
+
+Before scanning for or proposing any intraday/technical setup (bucket 2
+Mag7 momentum entries, bucket 3 SPX daily setups), verify the market is
+currently in regular session: **9:30 AM–4:00 PM ET, Monday–Friday**,
+excluding NYSE holidays and adjusted for early-close days (e.g. the day
+after Thanksgiving, Christmas/July 4th eves).
+
+- Check the current time in ET against that window before pulling
+  intraday technicals (opening range, VWAP, 1-min/4h confirmation,
+  live 0DTE OI) — these reads are meaningless or stale outside the
+  session.
+- If asked to scan while the market is closed, say so plainly and don't
+  fabricate a live technical read. Offer instead to prep a watchlist/plan
+  for the next session's open, or to run it once the market opens.
+- Bucket 1 (long-term energy/AI infrastructure research) is **not**
+  time-gated — fundamentals research, screening, and thesis-building can
+  happen anytime.
+
 ## Strategy buckets
 
 ### 1. Long-term — energy/AI infrastructure bottlenecks
