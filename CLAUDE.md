@@ -35,6 +35,27 @@ after Thanksgiving, Christmas/July 4th eves).
   time-gated — fundamentals research, screening, and thesis-building can
   happen anytime.
 
+## Standing rule: execution & account constraints
+
+- Only accounts explicitly flagged `agentic_allowed=true` can have orders
+  placed by this agent. All other linked accounts (IRAs, other individual/
+  margin accounts) require the user to place the order manually — screen
+  and propose for those accounts the same as any other, but say so
+  plainly rather than attempting a call that will fail.
+- The Robinhood agentic MCP connection supports **single-leg orders
+  only** — long call, long put, covered call, cash-secured put. Multi-leg
+  spreads cannot be placed through this agent regardless of account
+  option level; they must be entered manually in the Robinhood app.
+- Spread trading (option level 3) is **not available on Robinhood IRAs**
+  at all, even for manual entry — a platform restriction, not a
+  suitability gate. Cash-secured puts (level 2, full collateral) remain
+  available in IRAs and are the practical route to genuinely high-POP
+  structures there.
+- A cash-secured put's collateral requirement is strike × 100 regardless
+  of how far OTM the strike is — check this against actual account
+  buying power (not total value; unsettled proceeds don't count) before
+  proposing size.
+
 ## Strategy buckets
 
 ### 1. Long-term — energy/AI infrastructure bottlenecks
@@ -129,3 +150,65 @@ each, none overbought/oversold) as higher-confidence than any single
 timeframe in isolation. This read correctly called the 2026-07-10 session:
 a flash break of the opening range on a volume spike, a V-shaped reclaim,
 and continuation toward the 7600-strike call OI wall.
+
+#### POP calibration note (2026-07-10)
+
+An 80%+ POP bar for single-leg 0DTE structures proved unreachable in
+practice — defined-risk spreads can clear that on SPX, but this agent's
+execution path (see execution constraints above) only supports single-leg
+orders, which cap out far lower. Recalibrated screening threshold to
+**30%+ POP** for single-leg 0DTE proposals; reserve an 80%+ bar for
+defined-risk spread proposals when the account has Level 3 approval and
+the capital to support the wider collateral requirement.
+
+## Options structure playbooks
+
+These structures cut across buckets 1 and 2 above — they're how a thesis
+gets expressed, not a thesis on their own. See "Standing rule: execution
+& account constraints" above for what's actually placeable where.
+
+### Cash-secured puts (CSP) — income/premium-selling
+
+Sell an OTM put, collateralized in full (no margin needed, so this works
+in IRAs without spread approval).
+
+POP and yield trade off directly against each other on any single
+strike — moving the strike closer to spot buys yield and costs
+probability, one-for-one. No ticker breaks that relationship; it's priced
+consistently by the market, not a screening gap.
+
+High-IV small-caps (e.g. OKLO, NNE) pay more premium than liquid low-IV
+names (e.g. SOFI, RIVN) at matched POP. That extra yield compensates for
+two distinct things, not one: worse execution quality (thin open
+interest, wide bid/ask spreads) *and* genuine fundamental uncertainty
+(pre-revenue, single-name concentration, real terminal-value risk) — both
+matter, treat neither as free money.
+
+Screen on, in order: POP target → strike/collateral fit against actual
+buying power → open interest and spread width as a hard liquidity filter,
+not an afterthought.
+
+### LEAP calls (12+ months) — directional conviction
+
+Buying a long-dated call has a hard POP ceiling around **43-45%**,
+confirmed by testing delta up to 0.98 (52%+ in the money) across multiple
+durations (11-18 months) — going deeper ITM or longer-dated does not move
+this. A deep-ITM LEAP call converges toward synthetic stock ownership,
+and the platform's POP model prices that under risk-neutral (not bullish)
+drift, capping POP well below what delta alone suggests. 70%+ POP does
+not exist on a purchased call, on any name, at any strike or cost — don't
+screen for it.
+
+Since POP tops out well short of "high probability," judge these as
+leveraged directional bets instead: best-available POP + liquidity +
+leverage, in service of an actual thesis (bucket 1 or bucket 2 above).
+
+The POP ceiling is driven by **implied volatility, not by which bucket
+the name is in** — lower IV means less extrinsic-value drag on the
+breakeven at the same depth-in-the-money, so it's worth checking IV
+directly rather than assuming Mag7 beats energy/AI-infra (or vice versa)
+as a category. On 2026-07-10, Mag7 names as a group did screen better
+(IV ~30-53% vs. energy/infra's ~50-124%), but a high-IV Mag7 name (TSLA,
+the group's outlier) landed closer to the energy/infra cluster than to
+AAPL — confirming it's the IV level driving the result, not the bucket
+label.
