@@ -115,6 +115,9 @@ Session structure:
 - Prior day and overnight high/low: high-probability reaction zones
 - Key options strikes / gamma levels: large open-interest strikes often
   act as magnets or resistance, especially into 0DTE expiration
+- First touch only (added 2026-08-10): a level's edge is highest on its
+  first test of the session — once price has already tested and held a
+  level, treat later touches of that same level as lower-probability
 
 Indicators:
 - 9/21 EMA for intraday trend bias
@@ -127,6 +130,10 @@ Risk rules (hard limits, not suggestions):
 - Max loss per trade and per day — no revenge trading past the daily limit
 - Avoid trading the first 5 minutes after the open
 - Defined-risk structures over naked options given premium decay/volatility
+- Forced flat time (added 2026-08-10): stop monitoring/trading positions
+  by a fixed time early in the session (e.g. ~11:15 AM ET / 8:15 AM PT)
+  regardless of open P&L — a discipline backstop alongside the daily loss
+  limit, independent of whether that limit has been hit
 
 #### Multi-timeframe confirmation method (validated 2026-07-10)
 
