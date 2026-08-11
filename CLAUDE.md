@@ -35,6 +35,32 @@ after Thanksgiving, Christmas/July 4th eves).
   time-gated — fundamentals research, screening, and thesis-building can
   happen anytime.
 
+## Standing rule: automated background scanning
+
+A local cron job runs `scripts/scan_and_alert.sh` every 5 minutes on the
+machine where the `robinhood-trading` MCP server is registered, invoking a
+headless `claude -p` session to scan bucket 2 (Mag7 momentum) and bucket 3
+(SPX daily) during market hours only — self-gated in America/New_York
+time so it doesn't drift across DST changes.
+
+- **Alert-only.** A normal run finds nothing, logs `NO_SETUP` locally, and
+  sends no notification. A push alert (ntfy.sh) fires only when a setup
+  fully qualifies under that bucket's existing entry-discipline and risk
+  rules.
+- **Read-only by construction, not just instruction.** The headless
+  invocation is locked to an explicit tool allowlist (`WebFetch`,
+  `WebSearch`, and read-only `robinhood-trading` tools only). No
+  order-placement/modify/cancel tool is ever on that allowlist, so this
+  path cannot place a trade regardless of what the model outputs — a
+  second, CLI-enforced layer under "screen & suggest only" below, not a
+  replacement for it.
+- **Execution still requires the interactive session.** A qualifying
+  alert means "come review this," never a placed or pending order. Acting
+  on an alert still goes through every standing rule below unchanged:
+  per-trade approval, market-hours gating, execution/account constraints.
+- Setup notes (ntfy topic, tool allowlist, cron entry) live as comments in
+  `scripts/scan_and_alert.sh`.
+
 ## Standing rule: execution & account constraints
 
 - Only accounts explicitly flagged `agentic_allowed=true` can have orders
