@@ -164,11 +164,14 @@ Invalidation:
 
 Entry:
 - Classify the session with an explicit rule, not a judgment call: from
-  10:00 ET onward (post-opening-range), count VWAP crosses. **Zero
-  crosses** and price agreeing with the 9/21 EMA direction = trend day.
-  **Two or more crosses** = range day. Fewer than 60 minutes of
-  post-10:00 data, or exactly one ambiguous cross, means it isn't
-  classifiable yet — stand down rather than forcing a read.
+  10:00 ET onward (post-opening-range), count VWAP crosses. **A cross
+  only counts if a 1-min bar closes on the other side of VWAP** (not an
+  intrabar wick that pokes through and snaps back) — an intrabar-only
+  touch is noise, not a cross. **Zero crosses** and price agreeing with
+  the 9/21 EMA direction = trend day. **Two or more crosses** = range
+  day. Fewer than 60 minutes of post-10:00 data, or exactly one
+  ambiguous cross, means it isn't classifiable yet — stand down rather
+  than forcing a read.
 - Trend day: enter on a pullback to VWAP in the direction of the held
   side, only once price actually reclaims that side (a touch-and-through
   isn't a pullback entry).
@@ -235,18 +238,32 @@ read the full visible board across all near-dated expirations (SpotGamma
 typically shows the next several sessions), not just today's column.
 
 Definitions:
+- **Sign matters — magnet vs. accelerant.** Positive $ GEX means dealers
+  are long gamma there: they buy dips/sell rips into that strike, which
+  pins price toward it. Negative $ GEX means dealers are short gamma:
+  they sell dips/buy rips, which *amplifies* moves through that strike
+  rather than attracting price to it. A large-magnitude negative cell is
+  an acceleration/breakout level, not a target — do not treat it the
+  same as a positive cell just because its magnitude is bigger.
 - **King node**: the strike/expiration cell with the single largest-
-  magnitude signed $ GEX on the visible board. SpotGamma often flags
-  this visually (highlight/star, as in the 08-14 7675 example) — treat
-  that flag as authoritative when present rather than re-deriving it by
-  eye.
+  magnitude **positive** signed $ GEX on the visible board — only
+  positive-GEX cells qualify as a magnet/target. SpotGamma often flags
+  the board's overall largest-magnitude cell visually (highlight/star,
+  as in the 08-14 7675 example); treat that flag as authoritative for
+  *identifying the cell*, but still check its sign before treating it as
+  a king node — a starred negative cell is a flagged accelerant, not a
+  target.
 - **Node dominance**: candidate cell's $ GEX magnitude ÷ next-largest
-  same-side cell's magnitude (any expiration). Require ≥1.5x to call a
-  strike "qualifying" — a flat board on a given side has no reliable
-  magnet on that side.
-- **King node (per side)**: the qualifying node above spot and the
-  qualifying node below spot, independently — each can sit on a
-  different expiration date. If a side has no qualifying node, that
+  same-sign, same-side cell's magnitude (any expiration) — compare
+  positive against positive, negative against negative, never across
+  sign. Require ≥1.5x to call a strike "qualifying" — a flat board on a
+  given side has no reliable magnet (or accelerant) on that side.
+- **King node (per side)**: the qualifying **positive**-GEX node above
+  spot and the qualifying positive-GEX node below spot, independently —
+  each can sit on a different expiration date. If a side's
+  largest-magnitude cell is negative, that side has no king node (no
+  magnet); note the negative cell separately as that side's acceleration
+  level instead. If a side has no qualifying cell of either sign, that
   side contributes no bias.
 - **Flip zone**: the region between the two king nodes (above and below
   spot), when both exist. Directional bias is toward the node with
@@ -264,6 +281,11 @@ Entry rules:
   it sits in price — a pull toward a node >1.5% away is a
   lower-confidence read than a wall 0.3% away, regardless of its $ GEX
   size.
+- A flagged negative-GEX cell on the flip-zone boundary is a warning,
+  not a target: if spot is approaching one, treat a breach as a
+  momentum/acceleration trigger (widen expectations, don't fade it) and
+  do not propose a "pull toward the node" entry through it the way you
+  would for a positive-GEX king node.
 - The final-90-minutes urgency boost only applies to a node whose own
   expiration is **today** — that's when gamma pinning concentrates into
   a close. A node dated a few sessions out runs on its own timeline and
