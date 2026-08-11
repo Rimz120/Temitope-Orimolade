@@ -193,66 +193,74 @@ timeframe in isolation. This read correctly called the 2026-07-10 session:
 a flash break of the opening range on a volume spike, a V-shaped reclaim,
 and continuation toward the 7600-strike call OI wall.
 
-#### Method 4: Heatmap / king node (standalone, unvalidated)
+#### Method 4: Heatmap / king node (SpotGamma GEX, standalone, unvalidated)
 
 A second, independent SPX signal — not a confirmation layer on Method 3
-above. Trades the pull toward the dominant open-interest strike
+above. Trades the pull toward the dominant gamma-exposure strike
 directly, rather than trend/momentum structure. Still subject to the
-standing market-hours gating rule before pulling live 0DTE OI.
+standing market-hours gating rule before treating a read as live.
 
-Data: pull the **actual SPX 0DTE option chain's OI by strike** directly
-— do not substitute SPY OI scaled ×10. The SPY-proxy note above applies
-only to SPX price historicals (no historicals endpoint exists for SPX
-itself); SPY and SPX options trade on independent order books with
-unrelated OI distributions, so a scaled SPY strike does not correspond
-to a real SPX king node. If the live SPX chain isn't reachable via the
-Robinhood MCP, stand this method down for the session rather than
-approximating with SPY OI.
+Data: **SpotGamma's GEX heatmap** (strike × expiration grid of signed
+dollar gamma exposure). No API access to this account — read it
+manually from what the user shares (screenshot or verbal readout) each
+time this method is scanned. There is no live feed behind this: treat
+every read as a snapshot valid only as of when it was captured, and
+re-request an updated heatmap before acting if meaningful time has
+passed or spot has moved materially since the last one. If no current
+heatmap has been shared, stand this method down rather than reasoning
+from a stale or remembered read.
+
+Scope: unlike Methods 1-3, this method is **not** restricted to 0DTE —
+read the full visible board across all near-dated expirations (SpotGamma
+typically shows the next several sessions), not just today's column.
 
 Definitions:
-- **Qualifying node**: any strike whose OI clears node dominance (below)
-  against the next-largest strike on the *same side of spot* (i.e.
-  compare candidate strikes above spot only against other strikes above
-  spot, and likewise below).
-- **Node dominance**: candidate strike OI ÷ next-largest same-side
-  strike OI. Require ≥1.5x to call a strike "qualifying" — a flat
-  heatmap on a given side has no reliable magnet on that side.
+- **King node**: the strike/expiration cell with the single largest-
+  magnitude signed $ GEX on the visible board. SpotGamma often flags
+  this visually (highlight/star, as in the 08-14 7675 example) — treat
+  that flag as authoritative when present rather than re-deriving it by
+  eye.
+- **Node dominance**: candidate cell's $ GEX magnitude ÷ next-largest
+  same-side cell's magnitude (any expiration). Require ≥1.5x to call a
+  strike "qualifying" — a flat board on a given side has no reliable
+  magnet on that side.
 - **King node (per side)**: the qualifying node above spot and the
-  qualifying node below spot — two independent nodes, each cleared on
-  its own side. If a side has no qualifying node, that side has no king
-  node and contributes no bias.
+  qualifying node below spot, independently — each can sit on a
+  different expiration date. If a side has no qualifying node, that
+  side contributes no bias.
 - **Flip zone**: the region between the two king nodes (above and below
-  spot), when both exist. Directional bias is toward whichever king
-  node is nearer in premium-adjusted distance, not raw points. If only
-  one side has a qualifying node, bias defaults toward it; if neither
-  side does, stand down.
+  spot), when both exist. Directional bias is toward the node with
+  materially greater $ GEX magnitude; when two candidates are close in
+  magnitude, prefer the nearer-dated one — pin strength concentrates
+  faster as an expiration approaches its own close. If only one side has
+  a qualifying node, bias defaults toward it; if neither does, stand
+  down.
 
 Entry rules:
 - Only trade when spot sits inside the flip zone (price hasn't already
-  traded through the king node being targeted) and that side's node
-  dominance clears ≥1.5x.
+  traded through the king node being targeted) and that side clears
+  ≥1.5x node dominance.
 - Bias direction = toward the king node; scale size down the further out
-  that node sits — a same-day pull toward a node >1.5% away is a
-  lower-confidence read than a wall 0.3% away.
-- Gamma concentrates near spot as 0DTE expiration approaches, which
-  strengthens pinning for *nearby* nodes but does not help a distant,
-  unreached strike — there's less time left to get there. Only apply a
-  final-90-minutes confidence boost to a qualifying node within ~0.5% of
-  spot; a distant node late in the session is a stand-down case, not a
-  boosted one.
+  it sits in price — a pull toward a node >1.5% away is a
+  lower-confidence read than a wall 0.3% away, regardless of its $ GEX
+  size.
+- The final-90-minutes urgency boost only applies to a node whose own
+  expiration is **today** — that's when gamma pinning concentrates into
+  a close. A node dated a few sessions out runs on its own timeline and
+  doesn't get today's late-session boost just because it's the largest
+  number on the board right now.
 - Predefine invalidation before entry: a close through the king node on
-  volume. Robinhood's OI is clearing-derived and refreshes on a daily
-  cycle, not tick-by-tick — it will not visibly drop mid-session on a
-  real unwind, so don't rely on an intraday OI-drop as an invalidation
-  trigger. Treat a large change in the king node between one session's
-  OI pull and the next as the cue to re-anchor the read, not something
-  to expect intraday.
+  volume. Since there's no live feed, also invalidate the read itself —
+  don't hold a bias from an old screenshot once a fresh heatmap is
+  available; re-anchor on the new one rather than assuming continuity.
 
 Caveats:
-- Robinhood's OI feed is raw open interest, not signed dealer gamma
-  exposure. Raw OI conflates position size with position side (who's
-  short vs. long the strike) — treat it as a directional-bias proxy, not
-  a high-conviction gamma-hedging read.
+- This is a manual, screenshot-driven method, not an automated pull —
+  its reliability depends entirely on how current the shared heatmap is.
+  I can't independently refresh or verify it mid-session.
+- SpotGamma's $ GEX is real signed dealer gamma exposure, not raw OI —
+  meaningfully stronger signal than the Robinhood OI data this method
+  was originally speced against (superseded).
 - Unlike Method 3 (validated 2026-07-10), this method has no live track
   record yet. Mark trades taken under it as such and don't upgrade its
   POP/confidence framing until it's actually proven in session.
