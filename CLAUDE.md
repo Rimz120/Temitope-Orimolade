@@ -132,16 +132,20 @@ Risk rules (hard limits, not suggestions):
 
 Entry:
 - Mark the opening range from the first 30 minutes (9:30–10:00 ET) high/low.
-- Wait for a volume-confirmed break (volume above the recent average) of
-  the OR high or low — never in the first 5 minutes after the open (see
-  risk rules above).
+- Volume confirmation is a concrete threshold, not a vibe: the breaking
+  1-min bar's volume must be **≥1.5x the average per-bar volume of the
+  opening-range window itself** (9:30–10:00 ET) — a session-local
+  baseline, not "recent average." Never trade the break in the first 5
+  minutes after the open regardless (see risk rules above).
 - Direction bias must agree with the 9/21 EMA (price above both EMAs for
   a long break, below both for a short break).
-
-Confirmation:
-- Stronger read when the OR break also clears a prior-day or overnight
-  high/low — a fresh-session break that's also breaching a known
-  reaction zone carries more weight than an OR break in isolation.
+- **Require at least one confluence factor beyond the EMA agreement**
+  before this is tradeable: either (a) VWAP is already on the breakout
+  side, or (b) the break also clears a prior-day/overnight high/low. A
+  bare OR break with neither is noise — note it and stand down, don't
+  trade it.
+- Prefer the retest of the broken OR level over chasing the breakout bar
+  itself, same discipline as the bucket 2 pullback-over-chase rule above.
 
 Invalidation:
 - A close back inside the opening range, or rejection at the
@@ -150,13 +154,20 @@ Invalidation:
 #### Method 2: VWAP trend/range read
 
 Entry:
-- Classify the session first: a trend day holds one side of VWAP all
-  session; a range day oscillates around it.
+- Classify the session with an explicit rule, not a judgment call: from
+  10:00 ET onward (post-opening-range), count VWAP crosses. **Zero
+  crosses** and price agreeing with the 9/21 EMA direction = trend day.
+  **Two or more crosses** = range day. Fewer than 60 minutes of
+  post-10:00 data, or exactly one ambiguous cross, means it isn't
+  classifiable yet — stand down rather than forcing a read.
 - Trend day: enter on a pullback to VWAP in the direction of the held
-  side.
-- Range day: fade extremes back toward VWAP, only when paired with RSI
-  divergence at that extreme (RSI divergence alone, without a level, is
-  not a signal).
+  side, only once price actually reclaims that side (a touch-and-through
+  isn't a pullback entry).
+- Range day: fade only at a predefined structural level — prior-day/
+  overnight high or low, the opening-range high/low, or a heavy GEX/OI
+  strike (Method 4) — and only when paired with RSI divergence at that
+  level. A stall with no structural level behind it isn't a signal, no
+  matter how it looks on the chart.
 
 Confirmation / target:
 - Target the nearest volume-profile high-volume node (support/resistance)
@@ -167,8 +178,8 @@ Confirmation / target:
 Invalidation:
 - Trend-day pullback trade: a VWAP reclaim against the position (losing
   the held side).
-- Range-day fade: a break beyond the extreme being faded, invalidating
-  the range read.
+- Range-day fade: a break beyond the structural level being faded,
+  invalidating the range read.
 
 #### Method 3: Multi-timeframe confirmation (validated 2026-07-10)
 
