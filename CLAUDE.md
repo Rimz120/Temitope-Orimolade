@@ -151,6 +151,53 @@ timeframe in isolation. This read correctly called the 2026-07-10 session:
 a flash break of the opening range on a volume spike, a V-shaped reclaim,
 and continuation toward the 7600-strike call OI wall.
 
+#### Method 4: Heatmap / king node (standalone, unvalidated)
+
+A second, independent SPX signal — not a confirmation layer on the
+multi-timeframe method above. Trades the pull toward the dominant
+open-interest strike directly, rather than trend/momentum structure.
+Still subject to the standing market-hours gating rule before pulling
+live 0DTE OI.
+
+Data: the same 0DTE OI-by-strike pull used in the multi-timeframe method
+(Robinhood MCP, SPY-proxy scaled to SPX per the note above), read as a
+full-strike heatmap rather than just the strikes near spot.
+
+Definitions:
+- **King node**: the single strike with the largest OI (call + put
+  combined, unless one side dominates the heatmap — then use that side's
+  max).
+- **Node dominance**: king node OI ÷ next-largest strike OI. Require
+  ≥1.5x before treating a strike as a genuine "king" rather than a
+  crowded shelf of similarly-sized strikes — a flat heatmap has no
+  reliable magnet and this method should stand down.
+- **Flip zone**: the region between the nearest king node above spot and
+  the nearest king node below spot; directional bias is toward whichever
+  is nearer in premium-adjusted distance, not raw points.
+
+Entry rules:
+- Only trade when node dominance ≥1.5x and spot sits inside the flip
+  zone (i.e. price hasn't already traded through the king node).
+- Bias direction = toward the king node; scale size down the further out
+  that node sits — a same-day pull toward a node >1.5% away is a
+  lower-confidence read than a wall 0.3% away.
+- Pin/magnet strength increases mechanically into the close as 0DTE
+  gamma concentrates — weight this method's signal higher in the final
+  90 minutes of the session than mid-day.
+- Predefine invalidation before entry: a close through the king node on
+  volume, or the node itself shifting (OI at that strike dropping
+  materially intraday, signaling unwind rather than pin).
+
+Caveats:
+- Robinhood's OI feed is raw open interest, not signed dealer gamma
+  exposure. Raw OI conflates position size with position side (who's
+  short vs. long the strike) — treat it as a directional-bias proxy, not
+  a high-conviction gamma-hedging read.
+- Unlike the multi-timeframe method (validated 2026-07-10), this method
+  has no live track record yet. Mark trades taken under it as such and
+  don't upgrade its POP/confidence framing until it's actually proven
+  in session.
+
 #### POP calibration note (2026-07-10)
 
 An 80%+ POP bar for single-leg 0DTE structures proved unreachable in
