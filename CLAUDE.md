@@ -16,6 +16,15 @@ For every trade idea: present the ticker, direction, thesis, and size
 rationale, and wait for explicit user confirmation before calling any
 order-placement tool.
 
+## Standing rule: check lessons learned
+
+Before proposing a trade under any bucket 3 method (1-4), check
+`LESSONS.md` for prior failures on that method or setup type — don't
+repeat a known mistake. After a trade under any bucket resolves, log it
+in `LESSONS.md`. If the outcome reveals a rule was actually wrong (not
+just unlucky), update the method in this file and reference the
+`LESSONS.md` entry's date in that method's caveats.
+
 ## Standing rule: market-hours gating
 
 Before scanning for or proposing any intraday/technical setup (bucket 2
