@@ -128,7 +128,49 @@ Risk rules (hard limits, not suggestions):
 - Avoid trading the first 5 minutes after the open
 - Defined-risk structures over naked options given premium decay/volatility
 
-#### Multi-timeframe confirmation method (validated 2026-07-10)
+#### Method 1: Opening range breakout
+
+Entry:
+- Mark the opening range from the first 30 minutes (9:30–10:00 ET) high/low.
+- Wait for a volume-confirmed break (volume above the recent average) of
+  the OR high or low — never in the first 5 minutes after the open (see
+  risk rules above).
+- Direction bias must agree with the 9/21 EMA (price above both EMAs for
+  a long break, below both for a short break).
+
+Confirmation:
+- Stronger read when the OR break also clears a prior-day or overnight
+  high/low — a fresh-session break that's also breaching a known
+  reaction zone carries more weight than an OR break in isolation.
+
+Invalidation:
+- A close back inside the opening range, or rejection at the
+  prior-day/overnight level being tested.
+
+#### Method 2: VWAP trend/range read
+
+Entry:
+- Classify the session first: a trend day holds one side of VWAP all
+  session; a range day oscillates around it.
+- Trend day: enter on a pullback to VWAP in the direction of the held
+  side.
+- Range day: fade extremes back toward VWAP, only when paired with RSI
+  divergence at that extreme (RSI divergence alone, without a level, is
+  not a signal).
+
+Confirmation / target:
+- Target the nearest volume-profile high-volume node (support/resistance)
+  or a heavy-OI strike from the session-structure gamma read —
+  low-volume gaps between spot and that target suggest a fast move
+  rather than a grind.
+
+Invalidation:
+- Trend-day pullback trade: a VWAP reclaim against the position (losing
+  the held side).
+- Range-day fade: a break beyond the extreme being faded, invalidating
+  the range read.
+
+#### Method 3: Multi-timeframe confirmation (validated 2026-07-10)
 
 SPX itself has no historicals endpoint via the Robinhood trading API — use
 SPY as a 10x proxy and scale.
@@ -153,50 +195,67 @@ and continuation toward the 7600-strike call OI wall.
 
 #### Method 4: Heatmap / king node (standalone, unvalidated)
 
-A second, independent SPX signal — not a confirmation layer on the
-multi-timeframe method above. Trades the pull toward the dominant
-open-interest strike directly, rather than trend/momentum structure.
-Still subject to the standing market-hours gating rule before pulling
-live 0DTE OI.
+A second, independent SPX signal — not a confirmation layer on Method 3
+above. Trades the pull toward the dominant open-interest strike
+directly, rather than trend/momentum structure. Still subject to the
+standing market-hours gating rule before pulling live 0DTE OI.
 
-Data: the same 0DTE OI-by-strike pull used in the multi-timeframe method
-(Robinhood MCP, SPY-proxy scaled to SPX per the note above), read as a
-full-strike heatmap rather than just the strikes near spot.
+Data: pull the **actual SPX 0DTE option chain's OI by strike** directly
+— do not substitute SPY OI scaled ×10. The SPY-proxy note above applies
+only to SPX price historicals (no historicals endpoint exists for SPX
+itself); SPY and SPX options trade on independent order books with
+unrelated OI distributions, so a scaled SPY strike does not correspond
+to a real SPX king node. If the live SPX chain isn't reachable via the
+Robinhood MCP, stand this method down for the session rather than
+approximating with SPY OI.
 
 Definitions:
-- **King node**: the single strike with the largest OI (call + put
-  combined, unless one side dominates the heatmap — then use that side's
-  max).
-- **Node dominance**: king node OI ÷ next-largest strike OI. Require
-  ≥1.5x before treating a strike as a genuine "king" rather than a
-  crowded shelf of similarly-sized strikes — a flat heatmap has no
-  reliable magnet and this method should stand down.
-- **Flip zone**: the region between the nearest king node above spot and
-  the nearest king node below spot; directional bias is toward whichever
-  is nearer in premium-adjusted distance, not raw points.
+- **Qualifying node**: any strike whose OI clears node dominance (below)
+  against the next-largest strike on the *same side of spot* (i.e.
+  compare candidate strikes above spot only against other strikes above
+  spot, and likewise below).
+- **Node dominance**: candidate strike OI ÷ next-largest same-side
+  strike OI. Require ≥1.5x to call a strike "qualifying" — a flat
+  heatmap on a given side has no reliable magnet on that side.
+- **King node (per side)**: the qualifying node above spot and the
+  qualifying node below spot — two independent nodes, each cleared on
+  its own side. If a side has no qualifying node, that side has no king
+  node and contributes no bias.
+- **Flip zone**: the region between the two king nodes (above and below
+  spot), when both exist. Directional bias is toward whichever king
+  node is nearer in premium-adjusted distance, not raw points. If only
+  one side has a qualifying node, bias defaults toward it; if neither
+  side does, stand down.
 
 Entry rules:
-- Only trade when node dominance ≥1.5x and spot sits inside the flip
-  zone (i.e. price hasn't already traded through the king node).
+- Only trade when spot sits inside the flip zone (price hasn't already
+  traded through the king node being targeted) and that side's node
+  dominance clears ≥1.5x.
 - Bias direction = toward the king node; scale size down the further out
   that node sits — a same-day pull toward a node >1.5% away is a
   lower-confidence read than a wall 0.3% away.
-- Pin/magnet strength increases mechanically into the close as 0DTE
-  gamma concentrates — weight this method's signal higher in the final
-  90 minutes of the session than mid-day.
+- Gamma concentrates near spot as 0DTE expiration approaches, which
+  strengthens pinning for *nearby* nodes but does not help a distant,
+  unreached strike — there's less time left to get there. Only apply a
+  final-90-minutes confidence boost to a qualifying node within ~0.5% of
+  spot; a distant node late in the session is a stand-down case, not a
+  boosted one.
 - Predefine invalidation before entry: a close through the king node on
-  volume, or the node itself shifting (OI at that strike dropping
-  materially intraday, signaling unwind rather than pin).
+  volume. Robinhood's OI is clearing-derived and refreshes on a daily
+  cycle, not tick-by-tick — it will not visibly drop mid-session on a
+  real unwind, so don't rely on an intraday OI-drop as an invalidation
+  trigger. Treat a large change in the king node between one session's
+  OI pull and the next as the cue to re-anchor the read, not something
+  to expect intraday.
 
 Caveats:
 - Robinhood's OI feed is raw open interest, not signed dealer gamma
   exposure. Raw OI conflates position size with position side (who's
   short vs. long the strike) — treat it as a directional-bias proxy, not
   a high-conviction gamma-hedging read.
-- Unlike the multi-timeframe method (validated 2026-07-10), this method
-  has no live track record yet. Mark trades taken under it as such and
-  don't upgrade its POP/confidence framing until it's actually proven
-  in session.
+- Unlike Method 3 (validated 2026-07-10), this method has no live track
+  record yet. Mark trades taken under it as such and don't upgrade its
+  POP/confidence framing until it's actually proven in session.
 
 #### POP calibration note (2026-07-10)
 
