@@ -16,6 +16,15 @@ For every trade idea: present the ticker, direction, thesis, and size
 rationale, and wait for explicit user confirmation before calling any
 order-placement tool.
 
+## Standing rule: check lessons learned
+
+Before proposing a trade under any bucket 3 method (1-4), check
+`LESSONS.md` for prior failures on that method or setup type — don't
+repeat a known mistake. After a trade under any bucket resolves, log it
+in `LESSONS.md`. If the outcome reveals a rule was actually wrong (not
+just unlucky), update the method in this file and reference the
+`LESSONS.md` entry's date in that method's caveats.
+
 ## Standing rule: market-hours gating
 
 Before scanning for or proposing any intraday/technical setup (bucket 2
@@ -132,16 +141,20 @@ Risk rules (hard limits, not suggestions):
 
 Entry:
 - Mark the opening range from the first 30 minutes (9:30–10:00 ET) high/low.
-- Wait for a volume-confirmed break (volume above the recent average) of
-  the OR high or low — never in the first 5 minutes after the open (see
-  risk rules above).
+- Volume confirmation is a concrete threshold, not a vibe: the breaking
+  1-min bar's volume must be **≥1.5x the average per-bar volume of the
+  opening-range window itself** (9:30–10:00 ET) — a session-local
+  baseline, not "recent average." Never trade the break in the first 5
+  minutes after the open regardless (see risk rules above).
 - Direction bias must agree with the 9/21 EMA (price above both EMAs for
   a long break, below both for a short break).
-
-Confirmation:
-- Stronger read when the OR break also clears a prior-day or overnight
-  high/low — a fresh-session break that's also breaching a known
-  reaction zone carries more weight than an OR break in isolation.
+- **Require at least one confluence factor beyond the EMA agreement**
+  before this is tradeable: either (a) VWAP is already on the breakout
+  side, or (b) the break also clears a prior-day/overnight high/low. A
+  bare OR break with neither is noise — note it and stand down, don't
+  trade it.
+- Prefer the retest of the broken OR level over chasing the breakout bar
+  itself, same discipline as the bucket 2 pullback-over-chase rule above.
 
 Invalidation:
 - A close back inside the opening range, or rejection at the
@@ -150,13 +163,23 @@ Invalidation:
 #### Method 2: VWAP trend/range read
 
 Entry:
-- Classify the session first: a trend day holds one side of VWAP all
-  session; a range day oscillates around it.
+- Classify the session with an explicit rule, not a judgment call: from
+  10:00 ET onward (post-opening-range), count VWAP crosses. **A cross
+  only counts if a 1-min bar closes on the other side of VWAP** (not an
+  intrabar wick that pokes through and snaps back) — an intrabar-only
+  touch is noise, not a cross. **Zero crosses** and price agreeing with
+  the 9/21 EMA direction = trend day. **Two or more crosses** = range
+  day. Fewer than 60 minutes of post-10:00 data, or exactly one
+  ambiguous cross, means it isn't classifiable yet — stand down rather
+  than forcing a read.
 - Trend day: enter on a pullback to VWAP in the direction of the held
-  side.
-- Range day: fade extremes back toward VWAP, only when paired with RSI
-  divergence at that extreme (RSI divergence alone, without a level, is
-  not a signal).
+  side, only once price actually reclaims that side (a touch-and-through
+  isn't a pullback entry).
+- Range day: fade only at a predefined structural level — prior-day/
+  overnight high or low, the opening-range high/low, or a heavy GEX/OI
+  strike (Method 4) — and only when paired with RSI divergence at that
+  level. A stall with no structural level behind it isn't a signal, no
+  matter how it looks on the chart.
 
 Confirmation / target:
 - Target the nearest volume-profile high-volume node (support/resistance)
@@ -167,8 +190,8 @@ Confirmation / target:
 Invalidation:
 - Trend-day pullback trade: a VWAP reclaim against the position (losing
   the held side).
-- Range-day fade: a break beyond the extreme being faded, invalidating
-  the range read.
+- Range-day fade: a break beyond the structural level being faded,
+  invalidating the range read.
 
 #### Method 3: Multi-timeframe confirmation (validated 2026-07-10)
 
@@ -193,66 +216,93 @@ timeframe in isolation. This read correctly called the 2026-07-10 session:
 a flash break of the opening range on a volume spike, a V-shaped reclaim,
 and continuation toward the 7600-strike call OI wall.
 
-#### Method 4: Heatmap / king node (standalone, unvalidated)
+#### Method 4: Heatmap / king node (SpotGamma GEX, standalone, unvalidated)
 
 A second, independent SPX signal — not a confirmation layer on Method 3
-above. Trades the pull toward the dominant open-interest strike
+above. Trades the pull toward the dominant gamma-exposure strike
 directly, rather than trend/momentum structure. Still subject to the
-standing market-hours gating rule before pulling live 0DTE OI.
+standing market-hours gating rule before treating a read as live.
 
-Data: pull the **actual SPX 0DTE option chain's OI by strike** directly
-— do not substitute SPY OI scaled ×10. The SPY-proxy note above applies
-only to SPX price historicals (no historicals endpoint exists for SPX
-itself); SPY and SPX options trade on independent order books with
-unrelated OI distributions, so a scaled SPY strike does not correspond
-to a real SPX king node. If the live SPX chain isn't reachable via the
-Robinhood MCP, stand this method down for the session rather than
-approximating with SPY OI.
+Data: **SpotGamma's GEX heatmap** (strike × expiration grid of signed
+dollar gamma exposure). No API access to this account — read it
+manually from what the user shares (screenshot or verbal readout) each
+time this method is scanned. There is no live feed behind this: treat
+every read as a snapshot valid only as of when it was captured, and
+re-request an updated heatmap before acting if meaningful time has
+passed or spot has moved materially since the last one. If no current
+heatmap has been shared, stand this method down rather than reasoning
+from a stale or remembered read.
+
+Scope: unlike Methods 1-3, this method is **not** restricted to 0DTE —
+read the full visible board across all near-dated expirations (SpotGamma
+typically shows the next several sessions), not just today's column.
 
 Definitions:
-- **Qualifying node**: any strike whose OI clears node dominance (below)
-  against the next-largest strike on the *same side of spot* (i.e.
-  compare candidate strikes above spot only against other strikes above
-  spot, and likewise below).
-- **Node dominance**: candidate strike OI ÷ next-largest same-side
-  strike OI. Require ≥1.5x to call a strike "qualifying" — a flat
-  heatmap on a given side has no reliable magnet on that side.
-- **King node (per side)**: the qualifying node above spot and the
-  qualifying node below spot — two independent nodes, each cleared on
-  its own side. If a side has no qualifying node, that side has no king
-  node and contributes no bias.
+- **Sign matters — magnet vs. accelerant.** Positive $ GEX means dealers
+  are long gamma there: they buy dips/sell rips into that strike, which
+  pins price toward it. Negative $ GEX means dealers are short gamma:
+  they sell dips/buy rips, which *amplifies* moves through that strike
+  rather than attracting price to it. A large-magnitude negative cell is
+  an acceleration/breakout level, not a target — do not treat it the
+  same as a positive cell just because its magnitude is bigger.
+- **King node**: the strike/expiration cell with the single largest-
+  magnitude **positive** signed $ GEX on the visible board — only
+  positive-GEX cells qualify as a magnet/target. SpotGamma often flags
+  the board's overall largest-magnitude cell visually (highlight/star,
+  as in the 08-14 7675 example); treat that flag as authoritative for
+  *identifying the cell*, but still check its sign before treating it as
+  a king node — a starred negative cell is a flagged accelerant, not a
+  target.
+- **Node dominance**: candidate cell's $ GEX magnitude ÷ next-largest
+  same-sign, same-side cell's magnitude (any expiration) — compare
+  positive against positive, negative against negative, never across
+  sign. Require ≥1.5x to call a strike "qualifying" — a flat board on a
+  given side has no reliable magnet (or accelerant) on that side.
+- **King node (per side)**: the qualifying **positive**-GEX node above
+  spot and the qualifying positive-GEX node below spot, independently —
+  each can sit on a different expiration date. If a side's
+  largest-magnitude cell is negative, that side has no king node (no
+  magnet); note the negative cell separately as that side's acceleration
+  level instead. If a side has no qualifying cell of either sign, that
+  side contributes no bias.
 - **Flip zone**: the region between the two king nodes (above and below
-  spot), when both exist. Directional bias is toward whichever king
-  node is nearer in premium-adjusted distance, not raw points. If only
-  one side has a qualifying node, bias defaults toward it; if neither
-  side does, stand down.
+  spot), when both exist. Directional bias is toward the node with
+  materially greater $ GEX magnitude; when two candidates are close in
+  magnitude, prefer the nearer-dated one — pin strength concentrates
+  faster as an expiration approaches its own close. If only one side has
+  a qualifying node, bias defaults toward it; if neither does, stand
+  down.
 
 Entry rules:
 - Only trade when spot sits inside the flip zone (price hasn't already
-  traded through the king node being targeted) and that side's node
-  dominance clears ≥1.5x.
+  traded through the king node being targeted) and that side clears
+  ≥1.5x node dominance.
 - Bias direction = toward the king node; scale size down the further out
-  that node sits — a same-day pull toward a node >1.5% away is a
-  lower-confidence read than a wall 0.3% away.
-- Gamma concentrates near spot as 0DTE expiration approaches, which
-  strengthens pinning for *nearby* nodes but does not help a distant,
-  unreached strike — there's less time left to get there. Only apply a
-  final-90-minutes confidence boost to a qualifying node within ~0.5% of
-  spot; a distant node late in the session is a stand-down case, not a
-  boosted one.
+  it sits in price — a pull toward a node >1.5% away is a
+  lower-confidence read than a wall 0.3% away, regardless of its $ GEX
+  size.
+- A flagged negative-GEX cell on the flip-zone boundary is a warning,
+  not a target: if spot is approaching one, treat a breach as a
+  momentum/acceleration trigger (widen expectations, don't fade it) and
+  do not propose a "pull toward the node" entry through it the way you
+  would for a positive-GEX king node.
+- The final-90-minutes urgency boost only applies to a node whose own
+  expiration is **today** — that's when gamma pinning concentrates into
+  a close. A node dated a few sessions out runs on its own timeline and
+  doesn't get today's late-session boost just because it's the largest
+  number on the board right now.
 - Predefine invalidation before entry: a close through the king node on
-  volume. Robinhood's OI is clearing-derived and refreshes on a daily
-  cycle, not tick-by-tick — it will not visibly drop mid-session on a
-  real unwind, so don't rely on an intraday OI-drop as an invalidation
-  trigger. Treat a large change in the king node between one session's
-  OI pull and the next as the cue to re-anchor the read, not something
-  to expect intraday.
+  volume. Since there's no live feed, also invalidate the read itself —
+  don't hold a bias from an old screenshot once a fresh heatmap is
+  available; re-anchor on the new one rather than assuming continuity.
 
 Caveats:
-- Robinhood's OI feed is raw open interest, not signed dealer gamma
-  exposure. Raw OI conflates position size with position side (who's
-  short vs. long the strike) — treat it as a directional-bias proxy, not
-  a high-conviction gamma-hedging read.
+- This is a manual, screenshot-driven method, not an automated pull —
+  its reliability depends entirely on how current the shared heatmap is.
+  I can't independently refresh or verify it mid-session.
+- SpotGamma's $ GEX is real signed dealer gamma exposure, not raw OI —
+  meaningfully stronger signal than the Robinhood OI data this method
+  was originally speced against (superseded).
 - Unlike Method 3 (validated 2026-07-10), this method has no live track
   record yet. Mark trades taken under it as such and don't upgrade its
   POP/confidence framing until it's actually proven in session.
