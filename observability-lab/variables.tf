@@ -59,3 +59,8 @@ variable "writable_tables" {
   type        = list(string)
   default     = ["printers", "printer_assignments"]
 }
+
+variable "alert_email" {
+  description = "Email address for CloudWatch alarm notifications"
+  type        = string
+}
