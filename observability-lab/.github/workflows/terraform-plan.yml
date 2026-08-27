@@ -4,11 +4,14 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '**.tf'
+      - 'observability-lab/**.tf'
 
 jobs:
   plan:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: observability-lab
     steps:
       - name: Checkout
         uses: actions/checkout@v4
