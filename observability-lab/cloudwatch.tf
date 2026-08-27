@@ -14,9 +14,10 @@ resource "aws_sns_topic" "db_alerts" {
 }
 
 resource "aws_sns_topic_subscription" "email_alert" {
-  topic_arn = aws_sns_topic.db_alerts.arn
-  protocol  = "email"
-  endpoint  = var.alert_email
+  topic_arn                      = aws_sns_topic.db_alerts.arn
+  protocol                       = "email"
+  endpoint                       = var.alert_email
+  confirmation_timeout_in_minutes = 5
 }
 
 # Alarms on the metrics that actually matter for a small Aurora Serverless v2
