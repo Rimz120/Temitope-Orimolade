@@ -1,0 +1,10 @@
+aws_region         = "us-east-1"
+project_name       = "groupid-lab"
+db_name            = "labdb"
+master_username    = "labadmin"
+# master_password is intentionally not set here.
+# export TF_VAR_master_password="something-strong" before running terraform.
+
+my_ip_cidr         = "REPLACE_WITH_YOUR_IP/32"  # curl -s ifconfig.me
+access_group_name  = "printer-admins"
+writable_tables    = ["printers", "printer_assignments"]
